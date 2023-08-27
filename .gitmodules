@@ -1,0 +1,6 @@
+[submodule "go"]
+	path = go
+	url = https://github.com/golang/go
+[submodule "libkflow"]
+	path = libkflow
+	url = https://github.com/kentik/libkflow

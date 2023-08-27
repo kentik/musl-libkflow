@@ -1,0 +1,16 @@
+name: package
+
+inputs:
+  target:
+    required: true
+  version:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - run: $GITHUB_ACTION_PATH/action.sh
+      shell: bash
+      env:
+        TARGET:  ${{ inputs.target  }}
+        VERSION: ${{ inputs.version }}

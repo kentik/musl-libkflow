@@ -1,0 +1,98 @@
+name: build
+
+on:
+  push:
+    branches: "*"
+
+jobs:
+  golang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.17.13"
+      - run: patch -d go -p1 < go-runtime.patch
+      - run: bash ./make.bash
+        working-directory: go/src
+      - run: tar -czf golang.tar.gz go
+      - uses: actions/upload-artifact@v3
+        with:
+          name: golang.tar.gz
+          path: golang.tar.gz
+
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-linux-musl
+            goarch: arm64
+            goos:   linux
+          - target: armv7-linux-musleabihf
+            goarch: arm
+            goos:   linux
+          - target: x86_64-linux-musl
+            goarch: amd64
+            goos:   linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: ./.github/actions/setup-xcc
+        with:
+          target:  ${{ matrix.target }}
+          version: f9cb5162
+      - uses: actions/download-artifact@v3
+        with:
+          name: golang.tar.gz
+      - run: tar -xzf golang.tar.gz -C /opt
+      - run: |
+          ls -lR /opt/go
+          echo "PATH=/opt/go/bin:$PATH" >> $GITHUB_ENV
+      - run: go env
+      - run: patch -d libkflow -p1 < libkflow.patch
+      - run: make -C libkflow
+        env:
+          GOARCH:  ${{ matrix.goarch }}
+          GOOS:    ${{ matrix.goos   }}
+          GOFLAGS: -mod=vendor
+          CGO_ENABLED: 1
+      - run: mv libkflow/out/$OUTPUT/libkflow.a libkflow-$TARGET.a
+        env:
+          TARGET: ${{ matrix.target }}
+          OUTPUT: ${{ matrix.goos }}-${{ matrix.goarch }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libkflow-${{ matrix.target }}.a
+          path: libkflow-${{ matrix.target }}.a
+    needs: golang
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const version = context.sha.substring(0, 8);
+
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              ref:   `refs/tags/${version}`,
+              sha:   context.sha
+            });
+
+            core.setOutput('version', version);
+        id: create-tag
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.create-tag.outputs.version }}
+          files: artifacts/**/*
+    needs: build

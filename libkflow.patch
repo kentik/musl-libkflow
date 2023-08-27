@@ -1,0 +1,13 @@
+diff --git a/cmd/libkflow/main.go b/cmd/libkflow/main.go
+index 02d0649..b1ad71a 100644
+--- a/cmd/libkflow/main.go
++++ b/cmd/libkflow/main.go
+@@ -198,7 +198,7 @@ func kflowSendDNS(q KflowDomainQuery, a *KflowDomainAnswer, n C.size_t) C.int {
+ 	}
+ 
+ 	answers := make([]api.DNSResourceRecord, n)
+-	for i, a := range (*[1 << 30]KflowDomainAnswer)(unsafe.Pointer(a))[:n:n] {
++	for i, a := range (*[1 << 16]KflowDomainAnswer)(unsafe.Pointer(a))[:n:n] {
+ 		answers[i] = api.DNSResourceRecord{
+ 			IP:  net.IP(bytes(a.ip)),
+ 			TTL: uint32(a.ttl),

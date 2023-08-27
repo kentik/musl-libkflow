@@ -1,0 +1,35 @@
+diff --git a/src/runtime/os_linux.go b/src/runtime/os_linux.go
+index a04c995c00..f8017a2983 100644
+--- a/src/runtime/os_linux.go
++++ b/src/runtime/os_linux.go
+@@ -212,7 +212,7 @@ func sysargs(argc int32, argv **byte) {
+
+ 	// now argv+n is auxv
+ 	auxv := (*[1 << 28]uintptr)(add(unsafe.Pointer(argv), uintptr(n)*sys.PtrSize))
+-	if sysauxv(auxv[:]) != 0 {
++	if argv != nil && sysauxv(auxv[:]) != 0 {
+ 		return
+ 	}
+ 	// In some situations we don't get a loader-provided
+diff --git a/src/runtime/runtime1.go b/src/runtime/runtime1.go
+index a0769bbb67..ae481808c5 100644
+--- a/src/runtime/runtime1.go
++++ b/src/runtime/runtime1.go
+@@ -54,10 +54,17 @@ var (
+ // nosplit for use in linux startup sysargs
+ //go:nosplit
+ func argv_index(argv **byte, i int32) *byte {
++	if argv == nil {
++		return nil
++	}
+ 	return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*sys.PtrSize))
+ }
+
+ func args(c int32, v **byte) {
++	if c > 65535 || c < 0 {
++		c = 0
++		v = nil
++	}
+ 	argc = c
+ 	argv = v
+ 	sysargs(c, v)
