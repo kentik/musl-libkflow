@@ -8,7 +8,7 @@ jobs:
   golang:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: actions/setup-go@v4
@@ -18,7 +18,7 @@ jobs:
       - run: bash ./make.bash
         working-directory: go/src
       - run: tar -czf golang.tar.gz go
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: golang.tar.gz
           path: golang.tar.gz
@@ -38,7 +38,7 @@ jobs:
             goos:   linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: true
@@ -46,7 +46,7 @@ jobs:
         with:
           target:  ${{ matrix.target }}
           version: f9cb5162
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: golang.tar.gz
       - run: tar -xzf golang.tar.gz -C /opt
@@ -65,7 +65,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           OUTPUT: ${{ matrix.goos }}-${{ matrix.goarch }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: libkflow-${{ matrix.target }}.a
           path: libkflow-${{ matrix.target }}.a
@@ -74,7 +74,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - uses: actions/github-script@v6
