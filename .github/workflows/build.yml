@@ -46,7 +46,7 @@ jobs:
         with:
           target:  ${{ matrix.target }}
           version: f9cb5162
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: golang.tar.gz
       - run: tar -xzf golang.tar.gz -C /opt
@@ -74,7 +74,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           path: artifacts
       - uses: actions/github-script@v6
