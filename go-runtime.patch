@@ -1,35 +1,41 @@
 diff --git a/src/runtime/os_linux.go b/src/runtime/os_linux.go
-index a04c995c00..f8017a2983 100644
+index 6ce656c70e..923c037308 100644
 --- a/src/runtime/os_linux.go
 +++ b/src/runtime/os_linux.go
-@@ -212,7 +212,7 @@ func sysargs(argc int32, argv **byte) {
+@@ -244,9 +244,11 @@ func sysargs(argc int32, argv **byte) {
+        // now argv+n is auxv
+        auxvp := (*[1 << 28]uintptr)(add(unsafe.Pointer(argv), uintptr(n)*goarch.PtrSize))
 
- 	// now argv+n is auxv
- 	auxv := (*[1 << 28]uintptr)(add(unsafe.Pointer(argv), uintptr(n)*sys.PtrSize))
--	if sysauxv(auxv[:]) != 0 {
-+	if argv != nil && sysauxv(auxv[:]) != 0 {
- 		return
- 	}
- 	// In some situations we don't get a loader-provided
+-       if pairs := sysauxv(auxvp[:]); pairs != 0 {
+-               auxv = auxvp[: pairs*2 : pairs*2]
+-               return
++       if argv != nil {
++               if pairs := sysauxv(auxvp[:]); pairs != 0 {
++                       auxv = auxvp[: pairs*2 : pairs*2]
++                       return
++               }
+        }
+        // In some situations we don't get a loader-provided
+        // auxv, such as when loaded as a library on Android.
 diff --git a/src/runtime/runtime1.go b/src/runtime/runtime1.go
-index a0769bbb67..ae481808c5 100644
+index 03ef74b8dc..d7e57ca7b6 100644
 --- a/src/runtime/runtime1.go
 +++ b/src/runtime/runtime1.go
-@@ -54,10 +54,17 @@ var (
- // nosplit for use in linux startup sysargs
+@@ -60,10 +60,17 @@ var (
+ //
  //go:nosplit
  func argv_index(argv **byte, i int32) *byte {
-+	if argv == nil {
-+		return nil
-+	}
- 	return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*sys.PtrSize))
++       if argv == nil {
++               return nil
++       }
+        return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*goarch.PtrSize))
  }
 
  func args(c int32, v **byte) {
-+	if c > 65535 || c < 0 {
-+		c = 0
-+		v = nil
-+	}
- 	argc = c
- 	argv = v
- 	sysargs(c, v)
++       if c > 65535 || c < 0 {
++               c = 0
++               v = nil
++       }
+        argc = c
+        argv = v
+        sysargs(c, v)
